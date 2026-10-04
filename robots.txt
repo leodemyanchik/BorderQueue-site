@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://leodemyanchik.github.io/BorderQueue-site/sitemap.xml
