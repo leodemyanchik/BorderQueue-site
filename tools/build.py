@@ -22,12 +22,15 @@ CHECKPOINTS = [
     ("Grigorovshchina", "Григоровщина", "Патерниеки, Латвия", "grigorovshchina", "site_grigorovshchina", "Григоровщине"),
 ]
 
-LOGO = """<svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#1e293b"/><path d="M8 22h16M8 16h11M8 10h6" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/></svg>"""
+LOGO = """<svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#1e3a8a"/><path d="M9 21.5h14M9 16h10M9 10.5h6" stroke="#93c5fd" stroke-width="2.6" stroke-linecap="round"/></svg>"""
 FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E"
-           "%3Crect width='32' height='32' rx='8' fill='%231e293b'/%3E%3Cpath d='M8 22h16M8 16h11M8 10h6' "
-           "stroke='%2322c55e' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E")
+           "%3Crect width='32' height='32' rx='9' fill='%231e3a8a'/%3E%3Cpath d='M9 21.5h14M9 16h10M9 10.5h6' "
+           "stroke='%2393c5fd' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E")
+# Значок Telegram на кнопке: узнаваемая форма, а не эмодзи (правило скилла: иконки только SVG).
+TG = """<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M21.4 4.6 2.9 11.7c-1.3.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.5l2.3-2.2 4.8 3.5c.9.5 1.5.2 1.7-.8l3.1-14.7c.3-1.3-.5-1.9-1.4-1.6zM9.6 14.3l8.8-5.6c.4-.3.8-.1.5.2l-7.3 6.6-.3 3.2-1.7-4.4z"/></svg>"""
 
-NAV = [("index.html", "Сейчас", ""), ("weekend.html", "Выходные", ""), ("accuracy.html", "Точность", "hide-sm")]
+NAV = [("index.html", "Сейчас", "hide-sm"), ("weekend.html", "Выходные", ""), ("accuracy.html", "Точность", "hide-sm")]
+BOT = "https://t.me/BorderTimerBot"
 
 
 def page(file, title, description, body, data, active=None):
@@ -50,11 +53,11 @@ def page(file, title, description, body, data, active=None):
 <meta property="og:description" content="{description}">
 <meta property="og:url" content="{canonical}">
 <meta property="og:locale" content="ru_RU">
-<meta name="theme-color" content="#1e293b">
+<meta name="theme-color" content="#f8fafc">
 <link rel="icon" href="{FAVICON}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&amp;display=swap&amp;subset=cyrillic" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&amp;family=Onest:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://borderqueueapi.onrender.com" crossorigin>
 <link rel="stylesheet" href="assets/style.css">
 <script src="assets/app.js" defer></script>
@@ -63,21 +66,24 @@ def page(file, title, description, body, data, active=None):
 <header class="top">
   <div class="wrap">
     <a class="brand" href="index.html">{LOGO}<span>BorderQueue</span></a>
-    <nav class="nav" aria-label="Разделы">{nav}<a data-bot href="https://t.me/BorderTimerBot">Бот</a></nav>
+    <nav class="nav" aria-label="Разделы">{nav}<a class="nav-bot" data-bot href="{BOT}">Бот</a></nav>
   </div>
 </header>
 <main class="wrap">
 {body}
-<section class="cta" aria-label="Телеграм-бот">
-  <p><strong>Бот подскажет, когда регистрироваться</strong>Скажи, к какому времени хочешь быть на границе, и бот напишет, когда пора вставать в очередь. А если сообщение можно проспать, позвонит на телефон. Первый звонок бесплатно.</p>
-  <a class="btn" data-bot href="https://t.me/BorderTimerBot">Открыть бота в Telegram</a>
+<section class="cta" aria-labelledby="cta-title">
+  <div>
+    <h2 id="cta-title">Бот напомнит, когда регистрироваться</h2>
+    <p>Скажи, к какому времени хочешь быть на границе, и бот напишет, когда пора вставать в очередь. А если сообщение можно проспать, позвонит на телефон. Первый звонок бесплатно.</p>
+  </div>
+  <a class="btn" data-bot href="{BOT}">{TG}Открыть бота</a>
 </section>
 </main>
 <footer>
   <div class="wrap">
     <p id="totals">Ожидание измерено по сотням тысяч машин: от регистрации до вызова, как было на самом деле.</p>
     <p>Данные электронной очереди на границе Беларуси, обновление каждые 5 минут. Это не официальный сайт пунктов пропуска: зарегистрироваться можно только через официальный сервис.</p>
-    <div class="links">{cp_links} <a href="weekend.html">Выходные</a> <a href="accuracy.html">Точность прогноза</a> <a data-bot href="https://t.me/BorderTimerBot">Телеграм-бот</a></div>
+    <div class="links">{cp_links} <a href="weekend.html">Выходные</a> <a href="accuracy.html">Точность прогноза</a> <a data-bot href="{BOT}">Телеграм-бот</a></div>
   </div>
 </footer>
 </body>
@@ -86,64 +92,72 @@ def page(file, title, description, body, data, active=None):
     (ROOT / file).write_text(html, encoding="utf-8")
 
 
-STATUS = """<p class="status-line" id="updated">Загружаю данные…</p>
-<div class="stale" id="stale" role="status" hidden></div>"""
+def hero(eyebrow, h1, lead, status=True, button=True):
+    parts = ['<section class="hero">', f'<p class="eyebrow">{eyebrow}</p>', f"<h1>{h1}</h1>", f'<p class="lead">{lead}</p>']
+    if button:
+        parts.append(f'<div class="hero-actions"><a class="btn" data-bot href="{BOT}">{TG}Напомнить в Telegram</a></div>')
+    if status:
+        parts.append('<p class="status-line" id="updated" role="status"><span class="live" aria-hidden="true"></span><span>Загружаю данные…</span></p>')
+        parts.append('<div class="stale" id="stale" role="status" hidden></div>')
+    parts.append("</section>")
+    return "\n".join(parts)
+
 
 NOSCRIPT = """<noscript><p class="muted">Цифры подгружаются скриптом. Включи JavaScript или открой бота в Telegram.</p></noscript>"""
+SKELETON = '<div class="card"><span class="skeleton"></span></div>'
 
 page("index.html",
      "Очередь на границе Беларуси сейчас: Брест, Брузги, Каменный лог, Бенякони",
      "Сколько машин в зоне ожидания на каждом пункте пропуска Беларуси с ЕС, сколько ждать вызова и сколько на самом деле ждали. Обновление каждые 5 минут.",
-     f"""<h1>Очередь на границе Беларуси сейчас</h1>
-<p class="lead">Сколько машин стоит в электронной очереди на каждом пункте пропуска с ЕС, сколько ждать вызова, если зарегистрироваться сейчас, и сколько на самом деле ждали те, кого вызвали за последние три часа.</p>
-{STATUS}
+     hero("Граница Беларуси с ЕС", "Очередь на границе сейчас",
+          "Сколько ждать вызова, если зарегистрироваться сейчас, и сколько на самом деле ждали те, кого вызвали за последние три часа. По всем шести пунктам пропуска.")
+     + f"""
 {NOSCRIPT}
-<div class="grid" id="cards" aria-live="polite">
-  <div class="card"><span class="skeleton">Загрузка</span></div>
-  <div class="card"><span class="skeleton">Загрузка</span></div>
-</div>
+<div class="grid" id="cards" aria-live="polite">{SKELETON}{SKELETON}{SKELETON}</div>
 <h2>Как читать цифры</h2>
-<p><strong>Ждать, если встать сейчас</strong>: прогноз, через сколько вызовут машину, которая регистрируется прямо сейчас. Он считается по тому, сколько машин в час вызывали за последние часы и дни, с поправкой для каждого пункта.</p>
-<p><strong>Ждали вызванные за 3 часа</strong>: не прогноз, а факт. Сколько прошло от регистрации до вызова у машин, которых вызвали за последние три часа. Если очередь быстро растёт или тает, эта цифра отстаёт от прогноза.</p>
+<p><strong>Ждать вызова, если встать сейчас</strong>: прогноз для машины, которая регистрируется прямо сейчас. Считается по тому, сколько машин в час вызывали за последние часы и дни, с поправкой для каждого пункта.</p>
+<p><strong>Ждали за 3 часа</strong>: не прогноз, а факт. Сколько прошло от регистрации до вызова у машин, которых вызвали за последние три часа. Когда очередь быстро растёт или тает, эта цифра отстаёт от прогноза.</p>
 <p>Насколько прогнозу можно верить, показано на странице <a href="accuracy.html">точности</a>: на коротких очередях он почти всегда попадает в пределах часа, на длинных ошибается на часы.</p>""",
      {"page": "index", "start": "site"}, "index.html")
 
 for code, name, other, slug, start, loc in CHECKPOINTS:
     extra = ""
     if code == "Grigorovshchina":
-        extra = "<p>Через Григоровщину обычно ездит мало машин, поэтому очередь здесь часто пустая, а прогноз считать не по чему.</p>"
+        extra = '<p class="muted">Через Григоровщину обычно ездит мало машин, поэтому очередь здесь часто пустая, а прогноз считать не по чему.</p>'
     page(f"{slug}.html",
          f"Очередь в {loc} сейчас: сколько машин и сколько ждать | BorderQueue",
          f"Очередь на пункте пропуска {name} ({other}): машины в зоне ожидания сейчас, прогноз ожидания вызова, сколько ждали на самом деле и когда регистрироваться на выходные.",
-         f"""<h1>Очередь в {loc} сейчас</h1>
-<p class="lead">Пункт пропуска {name}, на той стороне {other}. Легковые машины в электронной очереди, прогноз ожидания вызова и сколько на самом деле ждали.</p>
-{STATUS}
+         hero(f"Пункт пропуска · {other}", f"Очередь в {loc} сейчас",
+              "Легковые машины в электронной очереди, прогноз ожидания вызова и сколько на самом деле ждали. Обновляется каждые 5 минут.")
+         + f"""
 {NOSCRIPT}
 {extra}
-<div id="cp" aria-live="polite"><div class="card"><span class="skeleton">Загрузка</span></div></div>
+<div id="cp" aria-live="polite">{SKELETON}</div>
 <div id="cp-weekend"></div>
-<p class="small muted"><a href="index.html">Все пункты пропуска</a></p>""",
+<p class="small" style="margin-top:32px"><a class="link-arrow" href="index.html">← Все пункты пропуска</a></p>""",
          {"page": "checkpoint", "code": code, "start": start})
 
 page("weekend.html",
      "Когда регистрироваться в очередь на границе на выходные | BorderQueue",
      "Сколько ждали вызова в пятницу вечером, в субботу и в воскресенье в зависимости от времени регистрации. По реально измеренным ожиданиям за последние три выходных.",
-     """<h1>Когда регистрироваться на выходные</h1>
-<p class="lead">Сколько ждали вызова те, кто регистрировался в субботу и воскресенье в разное время дня. Это измеренные ожидания, а не прогноз: от регистрации до вызова, по каждой машине.</p>
-<p class="muted small">Медиана за три последних прошедших выходных: <span id="weekends">…</span>. Под цифрой разброс между этими выходными. Три выходных это мало: когда граница меняет режим, как в августе, картина меняется вместе с ней.</p>
+     hero("Выходные", "Когда регистрироваться на выходные",
+          "Сколько ждали вызова те, кто регистрировался в субботу и воскресенье в разное время дня. Это измеренные ожидания, а не прогноз.", status=False)
+     + """
+<p class="muted small">Медиана за три последних прошедших выходных: <span id="weekends">…</span>. Мелко под цифрой разброс между ними. Три выходных это мало: когда граница меняет режим, как в августе, картина меняется вместе с ней.</p>
 <div class="legend" aria-hidden="true"><span><i class="sw ok"></i>до часа</span><span><i class="sw warn"></i>1–4 часа</span><span><i class="sw bad"></i>больше 4 часов</span></div>
 <noscript><p class="muted">Таблицы подгружаются скриптом. Включи JavaScript.</p></noscript>
-<div id="weekend" aria-live="polite"><div class="card"><span class="skeleton">Загрузка</span></div></div>""",
+<div id="weekend" aria-live="polite">""" + SKELETON + "</div>",
      {"page": "weekend", "start": "site_weekend"}, "weekend.html")
 
 page("accuracy.html",
      "Насколько точен прогноз очереди на границе | BorderQueue",
      "Как часто прогноз ожидания вызова попадает в пределах часа на коротких и длинных очередях. Проверено по реальным машинам за последние две недели.",
-     """<h1>Насколько точен прогноз</h1>
-<p class="lead">Каждой машине, которая встала в очередь за последние <span id="acc-days">14</span> дней, сравниваем прогноз, который бот показывал в момент её регистрации, с тем, сколько она ждала на самом деле. Проверено на <span id="acc-cars">…</span> машинах.</p>
-<h2>Прогноз попал в пределах часа</h2>
+     hero("Проверка", "Насколько точен прогноз",
+          'Для каждой машины, вставшей в очередь за последние <span id="acc-days">14</span> дней, сравниваем прогноз, который бот показывал в момент её регистрации, с тем, сколько она ждала на самом деле. Проверено на <span id="acc-cars">…</span> машинах.',
+          status=False, button=False)
+     + """
 <noscript><p class="muted">Цифры подгружаются скриптом. Включи JavaScript.</p></noscript>
-<div class="card"><div class="bars" id="accuracy" aria-live="polite"><span class="skeleton">Загрузка</span></div></div>
+<div class="card"><h3 style="margin-bottom:24px">Прогноз попал в пределах часа</h3><div class="bars" id="accuracy" aria-live="polite"><span class="skeleton"></span></div></div>
 <h2>Что из этого следует</h2>
 <p>На коротких очередях прогноз почти всегда точен. На длинных он ошибается на часы: очередь в несколько сотен машин успевает ускориться или встать, пока до тебя дойдёт.</p>
 <p>Поэтому бот не предлагает будить звонком к точному времени, когда в очереди больше 400 машин: надёжно доставленное неверное время это не услуга.</p>

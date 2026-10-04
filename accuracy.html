@@ -11,11 +11,11 @@
 <meta property="og:description" content="Как часто прогноз ожидания вызова попадает в пределах часа на коротких и длинных очередях. Проверено по реальным машинам за последние две недели.">
 <meta property="og:url" content="https://leodemyanchik.github.io/BorderQueue-site/accuracy.html">
 <meta property="og:locale" content="ru_RU">
-<meta name="theme-color" content="#1e293b">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%231e293b'/%3E%3Cpath d='M8 22h16M8 16h11M8 10h6' stroke='%2322c55e' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#f8fafc">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231e3a8a'/%3E%3Cpath d='M9 21.5h14M9 16h10M9 10.5h6' stroke='%2393c5fd' stroke-width='2.6' stroke-linecap='round'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;500;600;700&amp;display=swap&amp;subset=cyrillic" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;700&amp;family=Onest:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://borderqueueapi.onrender.com" crossorigin>
 <link rel="stylesheet" href="assets/style.css">
 <script src="assets/app.js" defer></script>
@@ -23,23 +23,28 @@
 <body data-page="accuracy" data-start="site_accuracy">
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="index.html"><svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#1e293b"/><path d="M8 22h16M8 16h11M8 10h6" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/></svg><span>BorderQueue</span></a>
-    <nav class="nav" aria-label="Разделы"><a href="index.html" class="">Сейчас</a><a href="weekend.html" class="">Выходные</a><a href="accuracy.html" class="hide-sm" aria-current="page">Точность</a><a data-bot href="https://t.me/BorderTimerBot">Бот</a></nav>
+    <a class="brand" href="index.html"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#1e3a8a"/><path d="M9 21.5h14M9 16h10M9 10.5h6" stroke="#93c5fd" stroke-width="2.6" stroke-linecap="round"/></svg><span>BorderQueue</span></a>
+    <nav class="nav" aria-label="Разделы"><a href="index.html" class="hide-sm">Сейчас</a><a href="weekend.html" class="">Выходные</a><a href="accuracy.html" class="hide-sm" aria-current="page">Точность</a><a class="nav-bot" data-bot href="https://t.me/BorderTimerBot">Бот</a></nav>
   </div>
 </header>
 <main class="wrap">
+<section class="hero">
+<p class="eyebrow">Проверка</p>
 <h1>Насколько точен прогноз</h1>
-<p class="lead">Каждой машине, которая встала в очередь за последние <span id="acc-days">14</span> дней, сравниваем прогноз, который бот показывал в момент её регистрации, с тем, сколько она ждала на самом деле. Проверено на <span id="acc-cars">…</span> машинах.</p>
-<h2>Прогноз попал в пределах часа</h2>
+<p class="lead">Для каждой машины, вставшей в очередь за последние <span id="acc-days">14</span> дней, сравниваем прогноз, который бот показывал в момент её регистрации, с тем, сколько она ждала на самом деле. Проверено на <span id="acc-cars">…</span> машинах.</p>
+</section>
 <noscript><p class="muted">Цифры подгружаются скриптом. Включи JavaScript.</p></noscript>
-<div class="card"><div class="bars" id="accuracy" aria-live="polite"><span class="skeleton">Загрузка</span></div></div>
+<div class="card"><h3 style="margin-bottom:24px">Прогноз попал в пределах часа</h3><div class="bars" id="accuracy" aria-live="polite"><span class="skeleton"></span></div></div>
 <h2>Что из этого следует</h2>
 <p>На коротких очередях прогноз почти всегда точен. На длинных он ошибается на часы: очередь в несколько сотен машин успевает ускориться или встать, пока до тебя дойдёт.</p>
 <p>Поэтому бот не предлагает будить звонком к точному времени, когда в очереди больше 400 машин: надёжно доставленное неверное время это не услуга.</p>
 <p class="small muted">Машины, которые ещё стоят в очереди, в проверку не попадают: их ожидание пока неизвестно. Из-за этого самые долгие ожидания последних дней немного недоучтены.</p>
-<section class="cta" aria-label="Телеграм-бот">
-  <p><strong>Бот подскажет, когда регистрироваться</strong>Скажи, к какому времени хочешь быть на границе, и бот напишет, когда пора вставать в очередь. А если сообщение можно проспать, позвонит на телефон. Первый звонок бесплатно.</p>
-  <a class="btn" data-bot href="https://t.me/BorderTimerBot">Открыть бота в Telegram</a>
+<section class="cta" aria-labelledby="cta-title">
+  <div>
+    <h2 id="cta-title">Бот напомнит, когда регистрироваться</h2>
+    <p>Скажи, к какому времени хочешь быть на границе, и бот напишет, когда пора вставать в очередь. А если сообщение можно проспать, позвонит на телефон. Первый звонок бесплатно.</p>
+  </div>
+  <a class="btn" data-bot href="https://t.me/BorderTimerBot"><svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M21.4 4.6 2.9 11.7c-1.3.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.5l2.3-2.2 4.8 3.5c.9.5 1.5.2 1.7-.8l3.1-14.7c.3-1.3-.5-1.9-1.4-1.6zM9.6 14.3l8.8-5.6c.4-.3.8-.1.5.2l-7.3 6.6-.3 3.2-1.7-4.4z"/></svg>Открыть бота</a>
 </section>
 </main>
 <footer>

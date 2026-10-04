@@ -12,6 +12,7 @@ const PAGES = {
   Benyakoni: "benyakoni.html", Berestovitsa: "berestovitsa.html", Grigorovshchina: "grigorovshchina.html",
 };
 const STALE_MINUTES = 15;
+const FAIL = `<p class="muted">Не удалось загрузить данные. Обнови страницу через минуту.</p>`;
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
@@ -49,6 +50,16 @@ function short(min) {
   return h < 10 ? `${h.toFixed(1).replace(".", ",")} ч` : `${Math.round(h)} ч`;
 }
 
+// Разброс коротко, чтобы помещался в ячейку на телефоне: «1,9–7,6 ч», «10–53 мин», «0,7–3,7 ч».
+function span(lo, hi) {
+  const a = short(lo), b = short(hi);
+  const unit = (s) => (s.endsWith(" ч") ? " ч" : s.endsWith(" мин") ? " мин" : "");
+  if (unit(a) && unit(a) === unit(b)) return `${a.slice(0, -unit(a).length)}–${b}`;
+  // Разные единицы: обе границы в часах, иначе строка не влезает в ячейку.
+  const hrs = (m) => (Math.round(m) <= 5 ? "0" : (m / 60).toFixed(1).replace(".", ",").replace(",0", ""));
+  return `${hrs(lo)}–${hrs(hi)} ч`;
+}
+
 function level(min) {
   if (min == null) return "none";
   if (min < 60) return "ok";
@@ -72,71 +83,67 @@ function clock(unix) {
 
 function ago(unix) {
   const m = Math.max(0, Math.round((Date.now() / 1000 - unix) / 60));
-  if (m < 1) return "только что";
-  return `${m} мин назад`;
+  return m < 1 ? "только что" : `${m} мин назад`;
 }
 
-function badge(cp) {
-  if (cp.cars === 0) return `<span class="badge ok">без очереди</span>`;
+// Статус словами, а не только цветом: цвет на солнце и для части людей не различим.
+function pill(cp) {
+  if (cp.cars === 0) return `<span class="pill ok">без очереди</span>`;
   const l = level(cp.waitMinutes);
   const text = { ok: "до часа", warn: "1–4 часа", bad: "больше 4 часов", none: "без прогноза" }[l];
-  return `<span class="badge ${l}">${text}</span>`;
+  return `<span class="pill ${l}">${text}</span>`;
 }
+
+const forecast = (cp) => (cp.cars === 0 ? "почти сразу" : dur(cp.waitMinutes));
+const measured = (cp) => (cp.recentWaitMinutes == null ? "мало данных" : dur(cp.recentWaitMinutes));
 
 // ---------- график за сутки ----------
 
 function spark(series, big = false) {
   if (!series || series.length < 4) return "";
-  const w = 300, h = big ? 140 : 56, pad = 4;
+  const w = 300, h = big ? 120 : 44, pad = 3;
   const ys = series.map((p) => p.cars);
-  const max = Math.max(...ys, 10), min = 0;
+  const max = Math.max(...ys, 10);
   const x = (i) => pad + (i * (w - 2 * pad)) / (series.length - 1);
-  const y = (v) => h - pad - ((v - min) * (h - 2 * pad)) / (max - min || 1);
+  const y = (v) => h - pad - (v * (h - 2 * pad)) / max;
   const line = series.map((p, i) => `${i ? "L" : "M"}${x(i).toFixed(1)},${y(p.cars).toFixed(1)}`).join("");
   const area = `${line}L${x(series.length - 1).toFixed(1)},${h - pad}L${x(0).toFixed(1)},${h - pad}Z`;
   const now = ys[ys.length - 1], peak = Math.max(...ys), low = Math.min(...ys);
   const label = `Очередь за сутки: от ${cars(low)} до ${cars(peak)}, сейчас ${cars(now)}.`;
   return `
-    <svg class="spark${big ? " big" : ""}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(label)}">
+    <svg class="spark${big ? " big-chart" : ""}" viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" role="img" aria-label="${esc(label)}">
       <path d="${area}" fill="var(--chart-fill)"></path>
-      <path d="${line}" fill="none" stroke="var(--chart)" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path>
+      <path d="${line}" fill="none" stroke="var(--chart)" stroke-width="1.75" vector-effect="non-scaling-stroke" stroke-linejoin="round"></path>
     </svg>
     <div class="spark-cap"><span>сутки назад</span><span>пик ${peak.toLocaleString("ru-RU")}</span><span>сейчас</span></div>`;
 }
 
 // ---------- карточка пункта ----------
 
-function figures(cp, wide = false) {
-  const forecast = cp.cars === 0 ? "почти сразу" : dur(cp.waitMinutes);
-  const recent = cp.recentWaitMinutes == null ? "мало данных" : dur(cp.recentWaitMinutes);
-  return `
-    <div class="figures">
-      <div class="fig${wide ? " wide" : ""}"><div class="v num">${cp.cars.toLocaleString("ru-RU")}</div><div class="l">${plural(cp.cars, "машина", "машины", "машин")} в очереди</div></div>
-      <div class="fig"><div class="v num">${forecast}</div><div class="l">ждать, если встать сейчас</div></div>
-      <div class="fig"><div class="v num">${recent}</div><div class="l">ждали вызванные за 3 часа</div></div>
-    </div>`;
-}
-
+// Главная цифра одна: сколько ждать, если встать сейчас. Ради неё человек и открыл страницу.
 function card(cp) {
-  const trucks = cp.trucks > 0 ? `<div class="truck">Грузовых в очереди: <span class="num">${cp.trucks}</span></div>` : "";
+  const trucks = cp.trucks > 0 ? `<span>грузовых <b class="num">${cp.trucks}</b></span>` : "";
   return `
     <a class="card" href="${PAGES[cp.code]}">
-      <div class="card-head"><h3>${esc(cp.name)}</h3>${badge(cp)}</div>
-      ${figures(cp)}
+      <div class="card-head"><h3>${esc(cp.name)}</h3>${pill(cp)}</div>
+      <div class="big num">${forecast(cp)}</div>
+      <div class="big-label">ждать вызова, если встать сейчас</div>
+      <div class="facts">
+        <span>в очереди <b class="num">${cp.cars.toLocaleString("ru-RU")}</b></span>
+        <span>ждали за 3 часа <b class="num">${measured(cp)}</b></span>
+        ${trucks}
+      </div>
       ${spark(cp.series)}
-      ${trucks}
     </a>`;
 }
 
-function sorted(list) {
-  return [...list].sort((a, b) => ORDER.indexOf(a.code) - ORDER.indexOf(b.code));
-}
+const sorted = (list) => [...list].sort((a, b) => ORDER.indexOf(a.code) - ORDER.indexOf(b.code));
+const newest = (now) => Math.max(...now.checkpoints.map((c) => c.snapshotAt));
 
 function staleCheck(now) {
   const box = $("#stale");
   if (!box || !now) return;
-  const newest = Math.max(...now.checkpoints.map((c) => c.snapshotAt));
-  const m = Math.round((Date.now() / 1000 - newest) / 60);
+  const m = Math.round((Date.now() / 1000 - newest(now)) / 60);
   if (m > STALE_MINUTES) {
     box.hidden = false;
     box.textContent = `Данные не обновлялись ${m} мин. Источник мог временно не отвечать, цифры ниже могут быть устаревшими.`;
@@ -146,8 +153,8 @@ function staleCheck(now) {
 function statusLine(now) {
   const el = $("#updated");
   if (!el || !now) return;
-  const newest = Math.max(...now.checkpoints.map((c) => c.snapshotAt));
-  el.innerHTML = `<span class="dot" aria-hidden="true"></span>Обновлено в ${clock(newest)} по Минску, ${ago(newest)}. Данные каждые 5 минут.`;
+  const t = newest(now);
+  el.innerHTML = `<span class="live" aria-hidden="true"></span><span>Обновлено в ${clock(t)} по Минску, ${ago(t)}. Данные каждые 5 минут.</span>`;
 }
 
 // ---------- страницы ----------
@@ -155,7 +162,7 @@ function statusLine(now) {
 async function pageIndex() {
   const now = await load("now");
   const box = $("#cards");
-  if (!now) { box.innerHTML = `<p class="muted">Не удалось загрузить данные. Обнови страницу через минуту.</p>`; return; }
+  if (!now) { box.innerHTML = FAIL; return; }
   box.innerHTML = sorted(now.checkpoints).map(card).join("");
   statusLine(now); staleCheck(now);
 }
@@ -165,47 +172,46 @@ function weekendTable(cpw, windows) {
     if (!c || c.medianMinutes == null) return `<td><span class="m">—</span><span class="r">мало машин</span></td>`;
     const vals = c.perWeekend.filter((v) => v != null);
     const lo = Math.min(...vals), hi = Math.max(...vals);
-    const range = vals.length > 1 && short(lo) !== short(hi) ? `от ${short(lo)} до ${short(hi)}` : "";
-    return `<td class="${level(c.medianMinutes)}"><span class="m num">${short(c.medianMinutes)}</span><span class="r">${range}</span></td>`;
+    const range = vals.length > 1 && short(lo) !== short(hi) ? span(lo, hi) : "";
+    return `<td class="${level(c.medianMinutes)}"><span class="m num">${short(c.medianMinutes)}</span><span class="r num">${range}</span></td>`;
   };
   return `
     <div class="table-scroll">
       <table class="wk">
-        <thead><tr><th scope="col">Регистрация</th>${windows.map((w) => `<th scope="col">${esc(w)}</th>`).join("")}</tr></thead>
+        <thead><tr><th scope="col"><span class="visually-hidden">День</span></th>${windows.map((w) => `<th scope="col">${esc(w.replace("до 9:00", "0–9"))}</th>`).join("")}</tr></thead>
         <tbody>
-          <tr><th scope="row">Суббота</th>${cpw.saturday.map(cell).join("")}</tr>
-          <tr><th scope="row">Воскресенье</th>${cpw.sunday.map(cell).join("")}</tr>
+          <tr><th scope="row">Сб</th>${cpw.saturday.map(cell).join("")}</tr>
+          <tr><th scope="row">Вс</th>${cpw.sunday.map(cell).join("")}</tr>
         </tbody>
       </table>
     </div>
-    <p class="small muted">Пятница вечером, после 17:00: <strong class="num">${cpw.friday.medianMinutes == null ? "мало данных" : dur(cpw.friday.medianMinutes)}</strong>.</p>`;
+    <p class="note">Пятница после 17:00: <b class="num">${cpw.friday.medianMinutes == null ? "мало данных" : dur(cpw.friday.medianMinutes)}</b></p>`;
 }
 
 async function pageWeekend() {
   const wk = await load("weekend");
   const box = $("#weekend");
-  if (!wk) { box.innerHTML = `<p class="muted">Не удалось загрузить данные. Обнови страницу через минуту.</p>`; return; }
+  if (!wk) { box.innerHTML = FAIL; return; }
   $("#weekends").textContent = wk.weekends.join(", ");
-  box.innerHTML = [...wk.checkpoints]
-    .sort((a, b) => ORDER.indexOf(a.code) - ORDER.indexOf(b.code))
+  box.innerHTML = sorted(wk.checkpoints)
     .filter((c) => c.code !== "Grigorovshchina")
-    .map((c) => `<section class="card" style="margin-bottom:12px"><div class="card-head"><h3><a href="${PAGES[c.code]}">${esc(c.name)}</a></h3></div>${weekendTable(c, wk.windows)}</section>`)
+    .map((c) => `<section class="card wk-card"><h3><a href="${PAGES[c.code]}">${esc(c.name)}</a></h3>${weekendTable(c, wk.windows)}</section>`)
     .join("");
 }
 
 async function pageAccuracy() {
   const acc = await load("accuracy");
   const box = $("#accuracy");
-  if (!acc) { box.innerHTML = `<p class="muted">Не удалось загрузить данные. Обнови страницу через минуту.</p>`; return; }
+  if (!acc) { box.innerHTML = FAIL; return; }
   $("#acc-cars").textContent = acc.cars.toLocaleString("ru-RU");
   $("#acc-days").textContent = acc.days;
   box.innerHTML = acc.bands.map((b) => {
     const pct = b.hitShare == null ? null : Math.round(b.hitShare * 100);
     return `
-      <div class="bar-row">
-        <div class="top-line"><span>Очередь ${esc(b.label)}</span><strong class="num">${pct == null ? "мало данных" : pct + "%"}</strong></div>
+      <div>
+        <div class="bar-top"><span>Очередь ${esc(b.label)}</span><strong class="num">${pct == null ? "—" : pct + "%"}</strong></div>
         <div class="bar" role="img" aria-label="${pct == null ? "мало данных" : `${pct} процентов прогнозов в пределах часа`}"><i style="width:${pct ?? 0}%"></i></div>
-        <div class="small muted">${cars(b.cars)}, обычная ошибка ${dur(b.medianErrorMinutes).replace("почти сразу", "меньше 5 мин")}</div>
+        <div class="bar-sub">${cars(b.cars)}, обычная ошибка ${dur(b.medianErrorMinutes).replace("почти сразу", "меньше 5 мин")}</div>
       </div>`;
   }).join("");
 }
@@ -214,12 +220,16 @@ async function pageCheckpoint(code) {
   const [now, wk] = await Promise.all([load("now"), load("weekend")]);
   const cp = now?.checkpoints.find((c) => c.code === code);
   const box = $("#cp");
-  if (!cp) { box.innerHTML = `<p class="muted">Не удалось загрузить данные. Обнови страницу через минуту.</p>`; return; }
-  const trucks = cp.trucks > 0 ? `<p class="truck">Грузовых в очереди: <span class="num">${cp.trucks}</span></p>` : "";
+  if (!cp) { box.innerHTML = FAIL; return; }
+  const trucks = cp.trucks > 0 ? `<p class="note">Грузовых в очереди: <b class="num">${cp.trucks}</b></p>` : "";
   box.innerHTML = `
     <div class="card">
-      <div class="card-head"><h2 style="margin:0;font-size:19px">Сейчас</h2>${badge(cp)}</div>
-      ${figures(cp, true)}
+      <div class="card-head"><h3>Сейчас</h3>${pill(cp)}</div>
+      <div class="detail" style="margin-top:16px">
+        <div><div class="big num">${forecast(cp)}</div><div class="big-label">ждать вызова, если встать сейчас</div></div>
+        <div><div class="big num">${cp.cars.toLocaleString("ru-RU")}</div><div class="big-label">${plural(cp.cars, "машина", "машины", "машин")} в очереди</div></div>
+        <div><div class="big num">${measured(cp)}</div><div class="big-label">ждали вызванные за последние 3 часа</div></div>
+      </div>
       ${spark(cp.series, true)}
       ${trucks}
     </div>`;
@@ -227,8 +237,8 @@ async function pageCheckpoint(code) {
   const cpw = wk?.checkpoints.find((c) => c.code === code);
   const wbox = $("#cp-weekend");
   if (wbox && cpw && code !== "Grigorovshchina") {
-    wbox.innerHTML = `<h2>Выходные: когда регистрироваться</h2>
-      <p class="lead">Сколько ждали вызова те, кто регистрировался в это время. Медиана за три последних выходных (${esc(wk.weekends.join(", "))}), ниже разброс между ними.</p>
+    wbox.innerHTML = `<h2>Когда регистрироваться на выходные</h2>
+      <p class="muted">Сколько ждали вызова те, кто регистрировался в это время. Медиана за три последних выходных (${esc(wk.weekends.join(", "))}), мелко разброс между ними.</p>
       <div class="card">${weekendTable(cpw, wk.windows)}</div>`;
   }
 }
