@@ -73,8 +73,12 @@ def page(file, title, description, body, data, active=None):
 {body}
 <section class="cta" aria-labelledby="cta-title">
   <div>
-    <h2 id="cta-title">Бот напомнит, когда регистрироваться</h2>
-    <p>Скажи, к какому времени хочешь быть на границе, и бот напишет, когда пора вставать в очередь. А если сообщение можно проспать, позвонит на телефон. Первый звонок бесплатно.</p>
+    <h2 id="cta-title">Бот следит за очередью за тебя</h2>
+    <ul class="features">
+      <li><strong>Напомнит, когда регистрироваться.</strong> Скажи, к какому времени хочешь быть на границе, и бот напишет, когда пора вставать в очередь.</li>
+      <li><strong>Напишет, когда очередь дорастёт.</strong> Выбери пункт и число машин, и бот сообщит, как только очередь до него дойдёт.</li>
+      <li><strong>Разбудит звонком.</strong> Если сообщение можно проспать, позвонит на телефон. Первый звонок бесплатно.</li>
+    </ul>
   </div>
   <a class="btn" data-bot href="{BOT}">{TG}Открыть бота</a>
 </section>
@@ -133,6 +137,13 @@ for code, name, other, slug, start, loc in CHECKPOINTS:
 {NOSCRIPT}
 {extra}
 <div id="cp" aria-live="polite">{SKELETON}</div>
+<div class="watch">
+  <div>
+    <h3>Не хочется следить за очередью?</h3>
+    <p>Бот напишет, когда очередь в {loc} дорастёт до нужного тебе числа машин. Один раз, без лишних сообщений.</p>
+  </div>
+  <a class="btn" data-bot href="{BOT}">{TG}Поставить дозор</a>
+</div>
 <div id="cp-weekend"></div>
 <p class="small" style="margin-top:32px"><a class="link-arrow" href="index.html">← Все пункты пропуска</a></p>""",
          {"page": "checkpoint", "code": code, "start": start})
