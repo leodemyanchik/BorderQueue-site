@@ -144,27 +144,43 @@ function staleCheck(now) {
   const box = $("#stale");
   if (!box || !now) return;
   const m = Math.round((Date.now() / 1000 - newest(now)) / 60);
+  box.hidden = m <= STALE_MINUTES;
   if (m > STALE_MINUTES) {
-    box.hidden = false;
     box.textContent = `Данные не обновлялись ${m} мин. Источник мог временно не отвечать, цифры ниже могут быть устаревшими.`;
   }
 }
 
+// Время последнего снимка. «Минут назад» пересчитывается каждые полминуты, а данные
+// перечитываются раз в минуту, так что открытая страница не застывает на старых цифрах.
+let lastSnapshot = null;
+
 function statusLine(now) {
+  if (now) lastSnapshot = newest(now);
   const el = $("#updated");
-  if (!el || !now) return;
-  const t = newest(now);
-  el.innerHTML = `<span class="live" aria-hidden="true"></span><span>Обновлено в ${clock(t)} по Минску, ${ago(t)}. Данные каждые 5 минут.</span>`;
+  if (!el || lastSnapshot == null) return;
+  el.innerHTML = `<span class="live" aria-hidden="true"></span><span>Обновлено в ${clock(lastSnapshot)} по Минску, ${ago(lastSnapshot)}. Источник опрашивается раз в 5 минут.</span>`;
+}
+
+function live(refresh) {
+  setInterval(refresh, 60_000);
+  setInterval(() => statusLine(null), 30_000);
+  // Вкладка, вернувшаяся из фона, сразу показывает свежее, а не ждёт следующей минуты.
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
 }
 
 // ---------- страницы ----------
 
 async function pageIndex() {
-  const now = await load("now");
-  const box = $("#cards");
-  if (!now) { box.innerHTML = FAIL; return; }
-  box.innerHTML = sorted(now.checkpoints).map(card).join("");
-  statusLine(now); staleCheck(now);
+  const render = async (first) => {
+    const now = await load("now", first ? 4 : 1);
+    const box = $("#cards");
+    // При фоновом обновлении неудача оставляет прежние цифры, а не стирает их.
+    if (!now) { if (first) box.innerHTML = FAIL; return; }
+    box.innerHTML = sorted(now.checkpoints).map(card).join("");
+    statusLine(now); staleCheck(now);
+  };
+  await render(true);
+  live(() => render(false));
 }
 
 function weekendTable(cpw, windows) {
@@ -218,9 +234,15 @@ async function pageAccuracy() {
 
 async function pageCheckpoint(code) {
   const [now, wk] = await Promise.all([load("now"), load("weekend")]);
+  if (!renderCheckpoint(code, now)) { $("#cp").innerHTML = FAIL; return; }
+  live(async () => { const fresh = await load("now", 1); if (fresh) renderCheckpoint(code, fresh); });
+  renderWeekend(code, wk);
+}
+
+function renderCheckpoint(code, now) {
   const cp = now?.checkpoints.find((c) => c.code === code);
   const box = $("#cp");
-  if (!cp) { box.innerHTML = FAIL; return; }
+  if (!cp) return false;
   const trucks = cp.trucks > 0 ? `<p class="note">Грузовых в очереди: <b class="num">${cp.trucks}</b></p>` : "";
   box.innerHTML = `
     <div class="card">
@@ -234,6 +256,10 @@ async function pageCheckpoint(code) {
       ${trucks}
     </div>`;
   statusLine(now); staleCheck(now);
+  return true;
+}
+
+function renderWeekend(code, wk) {
   const cpw = wk?.checkpoints.find((c) => c.code === code);
   const wbox = $("#cp-weekend");
   if (wbox && cpw && code !== "Grigorovshchina") {
