@@ -11,4 +11,4 @@ waited, when to register on a weekend, and how accurate the forecast is. Russian
 - No build step and no dependencies: GitHub Pages serves the repository root as is.
 - Links to the bot carry `?start=site…` labels so the bot can count visitors from each page.
 
-To move to a custom domain, change `SITE` in `tools/build.py`, rebuild, and add a `CNAME` file.
+Served at https://borderqueue.app: `SITE` in `tools/build.py` and the `CNAME` file must agree.

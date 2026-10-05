@@ -5,11 +5,11 @@
 
     python tools/build.py
 
-Адрес сайта меняется в SITE: сейчас это GitHub Pages, после покупки домена borderqueue.app.
+Адрес сайта в SITE: borderqueue.app (куплен 05.10.2026), он же в файле CNAME.
 """
 from pathlib import Path
 
-SITE = "https://leodemyanchik.github.io/BorderQueue-site"
+SITE = "https://borderqueue.app"
 ROOT = Path(__file__).resolve().parent.parent
 
 # Пункт, его пара на той стороне, страница, метка для бота, «в ком/чём» для заголовков.
