@@ -53,6 +53,12 @@ def page(file, title, description, body, data, active=None):
 <meta property="og:description" content="{description}">
 <meta property="og:url" content="{canonical}">
 <meta property="og:locale" content="ru_RU">
+<meta property="og:site_name" content="BorderQueue">
+<meta property="og:image" content="{SITE}/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="BorderQueue: очередь на границе Беларуси сейчас">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#f8fafc">
 <link rel="icon" href="{FAVICON}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
