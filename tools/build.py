@@ -7,6 +7,7 @@
 
 Адрес сайта в SITE: borderqueue.app (куплен 05.10.2026), он же в файле CNAME.
 """
+from datetime import date
 from pathlib import Path
 
 SITE = "https://borderqueue.app"
@@ -195,9 +196,12 @@ page("guide.html",
      {"page": "guide", "start": "site_guide"}, "guide.html")
 
 urls = ["", "weekend.html", "accuracy.html", "guide.html"] + [f"{c[3]}.html" for c in CHECKPOINTS]
+# Дата сборки как lastmod: страницы пересобираются целиком, так что она верна для каждой.
+BUILT = date.today().isoformat()
 (ROOT / "sitemap.xml").write_text(
     '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
-    + "".join(f"  <url><loc>{SITE}/{u}</loc></url>\n" for u in urls) + "</urlset>\n", encoding="utf-8")
+    + "".join(f"  <url><loc>{SITE}/{u}</loc><lastmod>{BUILT}</lastmod></url>\n" for u in urls)
+    + "</urlset>\n", encoding="utf-8")
 (ROOT / "robots.txt").write_text(f"User-agent: *\nAllow: /\nSitemap: {SITE}/sitemap.xml\n", encoding="utf-8")
 (ROOT / ".nojekyll").write_text("", encoding="utf-8")
 print("built", len(urls), "pages")
