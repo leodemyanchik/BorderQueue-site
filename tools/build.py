@@ -59,6 +59,7 @@ def page(file, title, description, body, data, active=None):
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="BorderQueue: очередь на границе Беларуси сейчас">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="yandex-verification" content="3c50b49f162ca68e">
 <meta name="theme-color" content="#f8fafc">
 <link rel="icon" href="{FAVICON}">
 <link rel="preconnect" href="https://fonts.googleapis.com">
