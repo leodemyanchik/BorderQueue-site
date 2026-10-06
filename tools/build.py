@@ -29,7 +29,7 @@ FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox
 # Значок Telegram на кнопке: узнаваемая форма, а не эмодзи (правило скилла: иконки только SVG).
 TG = """<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M21.4 4.6 2.9 11.7c-1.3.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.5l2.3-2.2 4.8 3.5c.9.5 1.5.2 1.7-.8l3.1-14.7c.3-1.3-.5-1.9-1.4-1.6zM9.6 14.3l8.8-5.6c.4-.3.8-.1.5.2l-7.3 6.6-.3 3.2-1.7-4.4z"/></svg>"""
 
-NAV = [("index.html", "Сейчас", "hide-sm"), ("weekend.html", "Выходные", ""), ("accuracy.html", "Точность", "hide-sm")]
+NAV = [("index.html", "Сейчас", "hide-sm"), ("weekend.html", "Выходные", ""), ("accuracy.html", "Точность", "hide-sm"), ("guide.html", "Справка", "hide-sm")]
 BOT = "https://t.me/BorderTimerBot"
 
 
@@ -87,7 +87,7 @@ def page(file, title, description, body, data, active=None):
   <div class="wrap">
     <p id="totals">Ожидание измерено по сотням тысяч машин: от регистрации до вызова, как было на самом деле.</p>
     <p>Данные электронной очереди на границе Беларуси, обновление каждые 5 минут. Это не официальный сайт пунктов пропуска: зарегистрироваться можно только через официальный сервис.</p>
-    <div class="links">{cp_links} <a href="weekend.html">Выходные</a> <a href="accuracy.html">Точность прогноза</a> <a data-bot href="{BOT}">Телеграм-бот</a></div>
+    <div class="links">{cp_links} <a href="weekend.html">Выходные</a> <a href="accuracy.html">Точность прогноза</a> <a href="guide.html">Как зарегистрироваться</a> <a data-bot href="{BOT}">Телеграм-бот</a></div>
   </div>
 </footer>
 </body>
@@ -175,7 +175,19 @@ page("accuracy.html",
 <p class="small muted">Машины, которые ещё стоят в очереди, в проверку не попадают: их ожидание пока неизвестно. Из-за этого самые долгие ожидания последних дней немного недоучтены.</p>""",
      {"page": "accuracy", "start": "site_accuracy"}, "accuracy.html")
 
-urls = ["", "weekend.html", "accuracy.html"] + [f"{c[3]}.html" for c in CHECKPOINTS]
+# Справка: раньше жила на Telegraph, переехала сюда 06.10.2026. Текст лежит в content/guide.html,
+# потому что это единственная страница сайта, где всё содержимое статично: её целиком видят
+# поисковики, и именно её люди ищут («как зарегистрироваться в электронную очередь»).
+page("guide.html",
+     "Электронная очередь на границе Беларуси: как зарегистрироваться и сколько стоит | BorderQueue",
+     "Как зарегистрироваться в электронную очередь на границе Беларуси онлайн, сколько стоит регистрация, сколько времени даётся после вызова и сколько машин вызывают в час.",
+     hero("Справка", "Электронная очередь на границе: как это работает",
+          "Сколько стоит регистрация, как пройти её онлайн, сколько времени даётся после вызова и сколько на самом деле ждут.",
+          status=False, button=False)
+     + (ROOT / "content" / "guide.html").read_text(encoding="utf-8"),
+     {"page": "guide", "start": "site_guide"}, "guide.html")
+
+urls = ["", "weekend.html", "accuracy.html", "guide.html"] + [f"{c[3]}.html" for c in CHECKPOINTS]
 (ROOT / "sitemap.xml").write_text(
     '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
     + "".join(f"  <url><loc>{SITE}/{u}</loc></url>\n" for u in urls) + "</urlset>\n", encoding="utf-8")

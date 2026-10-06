@@ -186,6 +186,14 @@ a.card:hover { border-color: #c7d2fe; color: inherit; }
 .bar > i { display: block; height: 100%; background: var(--chart); border-radius: 999px; }
 .bar-sub { font-size: 13px; color: var(--text-2); margin-top: 6px; }
 
+/* ---------- справка ---------- */
+.prose { max-width: 70ch; }
+.prose h2 { margin-top: var(--s5); }
+.prose ul, .prose ol { padding-left: 22px; margin: 0 0 var(--s2); }
+.prose li { margin-bottom: 6px; }
+.prose li::marker { color: var(--chart); }
+.callout { background: #f5f3ff; border: 1px solid #e4dcfd; border-radius: 12px; padding: 14px 18px; }
+
 /* ---------- подвал ---------- */
 footer { margin-top: var(--s7); border-top: 1px solid var(--line); padding: var(--s5) 0 var(--s6); font-size: 14px; color: var(--text-2); }
 footer p { margin-bottom: var(--s1); }
