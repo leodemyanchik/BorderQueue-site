@@ -30,6 +30,19 @@ FAVICON = ("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox
 # Значок Telegram на кнопке: узнаваемая форма, а не эмодзи (правило скилла: иконки только SVG).
 TG = """<svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M21.4 4.6 2.9 11.7c-1.3.5-1.2 1.2-.2 1.5l4.7 1.5 1.8 5.6c.2.6.4.8.8.8.4 0 .6-.2.9-.5l2.3-2.2 4.8 3.5c.9.5 1.5.2 1.7-.8l3.1-14.7c.3-1.3-.5-1.9-1.4-1.6zM9.6 14.3l8.8-5.6c.4-.3.8-.1.5.2l-7.3 6.6-.3 3.2-1.7-4.4z"/></svg>"""
 
+METRIKA_ID = 113535938
+# Яндекс Метрика, счётчик «BorderQueue» в аккаунте владельца. Только посещения, источники и
+# переходы по внешним ссылкам (trackLinks: клики в бота видны как переходы на t.me). Вебвизор и
+# карта кликов выключены: записывать действия посетителей сайту не нужно.
+METRIKA = f"""<script>
+(function(m,e,t,r,i,k,a){{m[i]=m[i]||function(){{(m[i].a=m[i].a||[]).push(arguments)}};
+m[i].l=1*new Date();for (var j=0;j<document.scripts.length;j++){{if(document.scripts[j].src===r){{return;}}}}
+k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)}})
+(window,document,"script","https://mc.yandex.ru/metrika/tag.js","ym");
+ym({METRIKA_ID},"init",{{clickmap:false,trackLinks:true,accurateTrackBounce:true,webvisor:false}});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/{METRIKA_ID}" style="position:absolute;left:-9999px" alt=""></div></noscript>"""
+
 NAV = [("index.html", "Сейчас", "hide-sm"), ("weekend.html", "Выходные", ""), ("accuracy.html", "Точность", "hide-sm"), ("guide.html", "Справка", "hide-sm")]
 BOT = "https://t.me/BorderTimerBot"
 
@@ -69,6 +82,7 @@ def page(file, title, description, body, data, active=None):
 <link rel="preconnect" href="https://borderqueueapi.onrender.com" crossorigin>
 <link rel="stylesheet" href="assets/style.css">
 <script src="assets/app.js" defer></script>
+{METRIKA}
 </head>
 <body {attrs}>
 <header class="top">
@@ -95,6 +109,7 @@ def page(file, title, description, body, data, active=None):
   <div class="wrap">
     <p id="totals">Ожидание измерено по сотням тысяч машин: от регистрации до вызова, как было на самом деле.</p>
     <p>Данные электронной очереди на границе Беларуси, обновление каждые 5 минут. Это не официальный сайт пунктов пропуска: зарегистрироваться можно только через официальный сервис.</p>
+    <p>Посещения считает Яндекс Метрика, без записи действий на странице.</p>
     <div class="links">{cp_links} <a href="weekend.html">Выходные</a> <a href="accuracy.html">Точность прогноза</a> <a href="guide.html">Как зарегистрироваться</a> <a data-bot href="{BOT}">Телеграм-бот</a></div>
   </div>
 </footer>
