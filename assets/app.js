@@ -154,11 +154,34 @@ function staleCheck(now) {
 // перечитываются раз в минуту, так что открытая страница не застывает на старых цифрах.
 let lastSnapshot = null;
 
-function statusLine(now) {
+// Очередь одной фразой: «в очереди 334 машины, ждать вызова около 15 ч». Ровно так же её пишет
+// tools/build.py, когда подставляет цифры в HTML для поисковиков: живой скрипт потом лишь
+// обновляет ту же фразу, а не рисует другую.
+function summary(cp) {
+  if (cp.cars === 0) return "очереди нет, вызывают почти сразу";
+  const wait = cp.waitMinutes == null ? "" : `, ждать вызова около ${dur(cp.waitMinutes)}`;
+  return `в очереди ${cars(cp.cars)}${wait}`;
+}
+
+let lastCp = null;
+
+function statusLine(now, cp) {
   if (now) lastSnapshot = newest(now);
+  if (cp) lastCp = cp;
   const el = $("#updated");
   if (!el || lastSnapshot == null) return;
-  el.innerHTML = `<span class="live" aria-hidden="true"></span><span>Обновлено в ${clock(lastSnapshot)} по Минску, ${ago(lastSnapshot)}. Источник опрашивается раз в 5 минут.</span>`;
+  const what = lastCp ? `: ${summary(lastCp)}.` : ".";
+  el.innerHTML = `<span class="live" aria-hidden="true"></span><span>Обновлено в ${clock(lastSnapshot)} по Минску, ${ago(lastSnapshot)}${what} Источник опрашивается раз в 5 минут.</span>`;
+}
+
+// Короткие строки у ссылок на пункты на главной: «334 машины, около 15 ч».
+function snaps(now) {
+  document.querySelectorAll("[data-snap]").forEach((el) => {
+    const cp = now.checkpoints.find((c) => c.code === el.dataset.snap);
+    if (!cp) return;
+    el.textContent = cp.cars === 0 ? "без очереди"
+      : cp.waitMinutes == null ? cars(cp.cars) : `${cars(cp.cars)}, около ${dur(cp.waitMinutes)}`;
+  });
 }
 
 function live(refresh) {
@@ -177,7 +200,7 @@ async function pageIndex() {
     // При фоновом обновлении неудача оставляет прежние цифры, а не стирает их.
     if (!now) { if (first) box.innerHTML = FAIL; return; }
     box.innerHTML = sorted(now.checkpoints).map(card).join("");
-    statusLine(now); staleCheck(now);
+    statusLine(now); staleCheck(now); snaps(now);
   };
   await render(true);
   live(() => render(false));
@@ -244,6 +267,10 @@ function renderCheckpoint(code, now) {
   const box = $("#cp");
   if (!cp) return false;
   const trucks = cp.trucks > 0 ? `<p class="note">Грузовых в очереди: <b class="num">${cp.trucks}</b></p>` : "";
+  // Автобусы только в Бресте: на остальных пунктах их в зоне ожидания почти не бывает.
+  const buses = code === "Brest" && cp.buses != null
+    ? `<p class="note">Автобусов в зоне ожидания: <b class="num">${cp.buses}</b>. Дольше всего автобусы обычно стоят на самом переходе, а этого электронная очередь не видит.</p>`
+    : "";
   box.innerHTML = `
     <div class="card">
       <div class="card-head"><h3>Сейчас</h3>${pill(cp)}</div>
@@ -254,8 +281,9 @@ function renderCheckpoint(code, now) {
       </div>
       ${spark(cp.series, true)}
       ${trucks}
+      ${buses}
     </div>`;
-  statusLine(now); staleCheck(now);
+  statusLine(now, cp); staleCheck(now);
   return true;
 }
 

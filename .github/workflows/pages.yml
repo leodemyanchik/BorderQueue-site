@@ -1,0 +1,47 @@
+# Сборка и выкладка сайта на GitHub Pages.
+#
+# Каждые 30 минут страницы пересобираются с текущими цифрами очереди прямо в HTML (PRERENDER=1),
+# чтобы их видели поисковики, которые плохо выполняют скрипты. Живой скрипт на странице всё равно
+# обновляет цифры каждую минуту. В репозиторий цифры не коммитятся: они существуют только в
+# выложенной копии.
+#
+# Для работы в Settings → Pages источником должен быть выбран «GitHub Actions».
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "7,37 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build with live numbers
+        env:
+          PRERENDER: "1"
+        run: python tools/build.py
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+      - id: deployment
+        uses: actions/deploy-pages@v4

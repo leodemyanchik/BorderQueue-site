@@ -7,7 +7,10 @@
 
 Адрес сайта в SITE: borderqueue.app (куплен 05.10.2026), он же в файле CNAME.
 """
-from datetime import date
+import json
+import os
+import urllib.request
+from datetime import date, datetime, timezone, timedelta
 from pathlib import Path
 
 SITE = "https://borderqueue.app"
@@ -16,6 +19,74 @@ ROOT = Path(__file__).resolve().parent.parent
 # Пункт, его пара на той стороне, страница, метка для бота, «в ком/чём» для заголовков.
 # Заголовки и описания написаны под то, что люди реально ищут (подсказки Google и Яндекса,
 # 08.10.2026): пункт вместе с парой («брест тересполь»), «онлайн», «сегодня», «зона ожидания».
+# ---- Цифры прямо в HTML ----
+# Только при PRERENDER=1: так собирает GitHub Actions каждые 30 минут (.github/workflows/pages.yml).
+# Обычная сборка на своей машине цифр не подставляет, иначе в репозиторий попадали бы устаревшие
+# числа. Яндекс выполняет скрипты хуже Google, поэтому цифры в тексте нужны именно ему.
+API = "https://borderqueueapi.onrender.com/api/public/now"
+
+
+def load_now():
+    if os.environ.get("PRERENDER") != "1":
+        return None
+    try:
+        req = urllib.request.Request(API, headers={"User-Agent": "BorderQueue-site-build"})
+        return json.load(urllib.request.urlopen(req, timeout=60))
+    except Exception as e:  # данные необязательны: без них страницы просто без цифр
+        print("prerender skipped:", e)
+        return None
+
+
+NOW = load_now()
+NOW_BY_CODE = {c["code"]: c for c in (NOW or {}).get("checkpoints", [])}
+
+
+def plural(n, one, few, many):
+    a, b = abs(n) % 100, abs(n) % 10
+    if 10 < a < 20: return many
+    if 1 < b < 5: return few
+    return one if b == 1 else many
+
+
+def cars_word(n):
+    return f"{n:,}".replace(",", " ") + " " + plural(n, "машина", "машины", "машин")
+
+
+def dur(minutes):
+    m = round(minutes)
+    if m <= 5: return "почти сразу"
+    if m < 60: return f"{m} мин"
+    h, mm = divmod(m, 60)
+    return f"{h} ч" if h >= 10 or mm == 0 else f"{h} ч {mm:02d} мин"
+
+
+def summary(cp):
+    """Та же фраза, что summary() в assets/app.js."""
+    if cp["cars"] == 0: return "очереди нет, вызывают почти сразу"
+    wait = "" if cp.get("waitMinutes") is None else f", ждать вызова около {dur(cp['waitMinutes'])}"
+    return f"в очереди {cars_word(cp['cars'])}{wait}"
+
+
+def short_snap(cp):
+    if cp["cars"] == 0: return "без очереди"
+    if cp.get("waitMinutes") is None: return cars_word(cp["cars"])
+    return f"{cars_word(cp['cars'])}, около {dur(cp['waitMinutes'])}"
+
+
+def snapshot_time():
+    if not NOW: return None
+    t = max(c["snapshotAt"] for c in NOW["checkpoints"])
+    return datetime.fromtimestamp(t, timezone(timedelta(hours=3))).strftime("%H:%M")
+
+
+def status_text(code=None):
+    t = snapshot_time()
+    if not t: return "Загружаю данные…"
+    cp = NOW_BY_CODE.get(code)
+    what = f": {summary(cp)}." if cp else "."
+    return f"Данные на {t} по Минску{what} Источник опрашивается раз в 5 минут."
+
+
 TO_COUNTRY = {"Польша": "Польшу", "Литва": "Литву", "Латвия": "Латвию"}
 # Брест-Тересполь для легковых это пункт «Варшавский мост»: так его ищут до 600 раз в месяц.
 ALIASES = {"Brest": "Варшавский мост"}
@@ -125,12 +196,12 @@ def page(file, title, description, body, data, active=None):
     (ROOT / file).write_text(html, encoding="utf-8")
 
 
-def hero(eyebrow, h1, lead, status=True, button=True):
+def hero(eyebrow, h1, lead, status=True, button=True, code=None):
     parts = ['<section class="hero">', f'<p class="eyebrow">{eyebrow}</p>', f"<h1>{h1}</h1>", f'<p class="lead">{lead}</p>']
     if button:
         parts.append(f'<div class="hero-actions"><a class="btn" data-bot href="{BOT}">{TG}Напомнить в Telegram</a></div>')
     if status:
-        parts.append('<p class="status-line" id="updated" role="status"><span class="live" aria-hidden="true"></span><span>Загружаю данные…</span></p>')
+        parts.append(f'<p class="status-line" id="updated" role="status"><span class="live" aria-hidden="true"></span><span>{status_text(code)}</span></p>')
         parts.append('<div class="stale" id="stale" role="status" hidden></div>')
     parts.append("</section>")
     return "\n".join(parts)
@@ -150,7 +221,7 @@ page("index.html",
 <h2>Сколько ждать на границе с Польшей и Литвой</h2>
 <p>Очередь онлайн по каждому пункту пропуска, с графиком за сутки и таблицей выходных:</p>
 <ul class="cp-links">
-{"".join(f'<li><a href="{c[3]}.html">Очередь {c[1]}-{c[2].split(", ")[0]}</a> <span class="muted">{c[2].split(", ")[1]}</span></li>' for c in CHECKPOINTS)}
+{"".join(f'<li><a href="{c[3]}.html">Очередь {c[1]}-{c[2].split(", ")[0]}</a> <span class="muted">{c[2].split(", ")[1]}</span><br><span class="small muted" data-snap="{c[0]}">{short_snap(NOW_BY_CODE[c[0]]) if c[0] in NOW_BY_CODE else ""}</span></li>' for c in CHECKPOINTS)}
 </ul>
 <h2>Как читать цифры</h2>
 <p><strong>Ждать вызова, если встать сейчас</strong>: прогноз для машины, которая регистрируется прямо сейчас. Считается по тому, сколько машин в час вызывали за последние часы и дни, с поправкой для каждого пункта.</p>
@@ -163,6 +234,14 @@ for code, name, other, slug, start, loc in CHECKPOINTS:
     extra = ""
     if code == "Grigorovshchina":
         extra = '<p class="muted">Через Григоровщину обычно ездит мало машин, поэтому очередь здесь часто пустая, а прогноз считать не по чему.</p>'
+    if code == "Brest":
+        # «Очередь автобусов брест» ищут тысячи раз в месяц. Честный ответ короткий: в зоне ожидания
+        # их обычно единицы, а стоят автобусы на самом переходе, чего электронная очередь не видит.
+        buses = NOW_BY_CODE.get("Brest", {}).get("buses")
+        now_b = f" Сейчас в ней {buses} {plural(buses, 'автобус', 'автобуса', 'автобусов')}." if buses is not None else ""
+        extra = ('<p class="muted">Автобусы в Бресте тоже регистрируются в электронной очереди, но в зоне ожидания '
+                 f'их обычно от нуля до десятка.{now_b} Дольше всего автобусы стоят на самом переходе, '
+                 'а этого электронная очередь не показывает.</p>')
     pair, country = other.split(", ")
     # Как пункт называют в поиске помимо официального имени (Вордстат, Беларусь, 08.10.2026).
     alias = ALIASES.get(code)
@@ -171,7 +250,8 @@ for code, name, other, slug, start, loc in CHECKPOINTS:
          f"Очередь {name}-{pair}{also} сейчас онлайн: сколько ждать на границе сегодня | BorderQueue",
          f"Очередь на границе {name}-{pair} онлайн: сколько машин в зоне ожидания {name} сегодня, сколько ждать вызова и сколько ждали на самом деле. Когда регистрироваться на выходные. Выезд в {TO_COUNTRY[country]}.",
          hero(f"Пункт пропуска {name}-{pair} · {country}", f"Очередь в {loc} сейчас",
-              f"Электронная очередь в зону ожидания {name}{also}, выезд из Беларуси в {TO_COUNTRY[country]} через {pair}. Сколько машин стоит сегодня, прогноз ожидания вызова и сколько на самом деле ждали. Обновляется онлайн каждые 5 минут.")
+              f"Электронная очередь в зону ожидания {name}{also}, выезд из Беларуси в {TO_COUNTRY[country]} через {pair}. Сколько машин стоит сегодня, прогноз ожидания вызова и сколько на самом деле ждали. Обновляется онлайн каждые 5 минут.",
+              code=code)
          + f"""
 {NOSCRIPT}
 {extra}
