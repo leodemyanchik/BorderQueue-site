@@ -186,6 +186,11 @@ a.card:hover { border-color: #c7d2fe; color: inherit; }
 .bar > i { display: block; height: 100%; background: var(--chart); border-radius: 999px; }
 .bar-sub { font-size: 13px; color: var(--text-2); margin-top: 6px; }
 
+/* ---------- ссылки на пункты на главной ---------- */
+.cp-links { list-style: none; padding: 0; margin: 0 0 var(--s2); display: grid; gap: 8px; }
+@media (min-width: 720px) { .cp-links { grid-template-columns: repeat(2, 1fr); } }
+.cp-links a { font-weight: 600; }
+
 /* ---------- справка ---------- */
 .prose { max-width: 70ch; }
 .prose h2 { margin-top: var(--s5); }
