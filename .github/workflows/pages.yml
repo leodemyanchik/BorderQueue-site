@@ -13,6 +13,8 @@ on:
     branches: [main]
   schedule:
     - cron: "7,37 * * * *"
+    # Отдельный ежесуточный запуск: только он из плановых сообщает Яндексу об обновлении (IndexNow).
+    - cron: "22 5 * * *"
   workflow_dispatch:
 
 permissions:
@@ -45,3 +47,8 @@ jobs:
           path: .
       - id: deployment
         uses: actions/deploy-pages@v4
+      # После выкладки, чтобы Яндекс пришёл уже за новой версией. Плановые сборки каждые 30 минут
+      # его не трогают: одни и те же адреса так часто слать незачем.
+      - name: Tell Yandex via IndexNow
+        if: github.event_name != 'schedule' || github.event.schedule == '22 5 * * *'
+        run: python tools/indexnow.py

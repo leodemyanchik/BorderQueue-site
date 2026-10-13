@@ -10,5 +10,8 @@ waited, when to register on a weekend, and how accurate the forecast is. Russian
   database. Source: the BorderQueue repository, `PublicStatsService.cs`.
 - No build step and no dependencies: GitHub Pages serves the repository root as is.
 - Links to the bot carry `?start=site…` labels so the bot can count visitors from each page.
+- After deploying, `tools/indexnow.py` sends the sitemap URLs to Yandex via IndexNow (on push and
+  once a day). The key file `bq7f3a9c1e5d2b8046a1c9e7f2d4b6a0.txt` in the root must stay, like the
+  Google and Yandex ownership files.
 
 Served at https://borderqueue.app: `SITE` in `tools/build.py` and the `CNAME` file must agree.
