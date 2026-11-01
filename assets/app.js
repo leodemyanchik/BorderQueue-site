@@ -94,7 +94,16 @@ function pill(cp) {
   return `<span class="pill ${l}">${text}</span>`;
 }
 
-const forecast = (cp) => (cp.cars === 0 ? "почти сразу" : dur(cp.waitMinutes));
+// На очереди от 400 машин бот отдаёт вилку, в которую попадают 8 машин из 10. В крупной цифре она
+// «21–27 ч», во фразе «от 21 до 27 ч», та же, что wait_text() в tools/build.py.
+const range = (cp) => (cp.waitLowMinutes == null ? null
+  : [Math.round(cp.waitLowMinutes / 60), Math.round(cp.waitHighMinutes / 60)]);
+const wait = (cp) => { const r = range(cp); return r ? `от ${r[0]} до ${r[1]} ч` : `около ${dur(cp.waitMinutes)}`; };
+const forecast = (cp) => {
+  if (cp.cars === 0) return "почти сразу";
+  const r = range(cp);
+  return r ? `${r[0]}–${r[1]} ч` : dur(cp.waitMinutes);
+};
 const measured = (cp) => (cp.recentWaitMinutes == null ? "мало данных" : dur(cp.recentWaitMinutes));
 
 // ---------- график за сутки ----------
@@ -159,8 +168,8 @@ let lastSnapshot = null;
 // обновляет ту же фразу, а не рисует другую.
 function summary(cp) {
   if (cp.cars === 0) return "очереди нет, вызывают почти сразу";
-  const wait = cp.waitMinutes == null ? "" : `, ждать вызова около ${dur(cp.waitMinutes)}`;
-  return `в очереди ${cars(cp.cars)}${wait}`;
+  const tail = cp.waitMinutes == null ? "" : `, ждать вызова ${wait(cp)}`;
+  return `в очереди ${cars(cp.cars)}${tail}`;
 }
 
 let lastCp = null;
@@ -180,7 +189,7 @@ function snaps(now) {
     const cp = now.checkpoints.find((c) => c.code === el.dataset.snap);
     if (!cp) return;
     el.textContent = cp.cars === 0 ? "без очереди"
-      : cp.waitMinutes == null ? cars(cp.cars) : `${cars(cp.cars)}, около ${dur(cp.waitMinutes)}`;
+      : cp.waitMinutes == null ? cars(cp.cars) : `${cars(cp.cars)}, ${wait(cp)}`;
   });
 }
 

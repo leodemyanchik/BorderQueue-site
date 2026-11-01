@@ -60,17 +60,25 @@ def dur(minutes):
     return f"{h} ч" if h >= 10 or mm == 0 else f"{h} ч {mm:02d} мин"
 
 
+def wait_text(cp):
+    """Тот же прогноз, что wait() в assets/app.js: на очереди от 400 машин бот отдаёт вилку,
+    в которую попадают 8 машин из 10, и тогда вместо «около 25 ч» пишется «от 21 до 27 ч»."""
+    if cp.get("waitLowMinutes") is not None:
+        return f"от {int(cp['waitLowMinutes'] / 60 + 0.5)} до {int(cp['waitHighMinutes'] / 60 + 0.5)} ч"
+    return f"около {dur(cp['waitMinutes'])}"
+
+
 def summary(cp):
     """Та же фраза, что summary() в assets/app.js."""
     if cp["cars"] == 0: return "очереди нет, вызывают почти сразу"
-    wait = "" if cp.get("waitMinutes") is None else f", ждать вызова около {dur(cp['waitMinutes'])}"
+    wait = "" if cp.get("waitMinutes") is None else f", ждать вызова {wait_text(cp)}"
     return f"в очереди {cars_word(cp['cars'])}{wait}"
 
 
 def short_snap(cp):
     if cp["cars"] == 0: return "без очереди"
     if cp.get("waitMinutes") is None: return cars_word(cp["cars"])
-    return f"{cars_word(cp['cars'])}, около {dur(cp['waitMinutes'])}"
+    return f"{cars_word(cp['cars'])}, {wait_text(cp)}"
 
 
 def snapshot_time():
@@ -225,7 +233,7 @@ page("index.html",
 {"".join(f'<li><a href="{c[3]}.html">Очередь {c[1]}-{c[2].split(", ")[0]}</a> <span class="muted">{c[2].split(", ")[1]}</span><br><span class="small muted" data-snap="{c[0]}">{short_snap(NOW_BY_CODE[c[0]]) if c[0] in NOW_BY_CODE else ""}</span></li>' for c in CHECKPOINTS)}
 </ul>
 <h2>Как читать цифры</h2>
-<p><strong>Ждать вызова, если встать сейчас</strong>: прогноз для машины, которая регистрируется прямо сейчас. Считается по тому, сколько машин в час вызывали за последние часы и дни, с поправкой для каждого пункта.</p>
+<p><strong>Ждать вызова, если встать сейчас</strong>: прогноз для машины, которая регистрируется прямо сейчас. Считается по тому, сколько машин обычно уходит из очереди в каждый час недели за последние четыре недели: ночью и в выходные вызывают иначе, чем днём в будни. На очереди от 400 машин вместо одной цифры показана вилка, в которую попадают 8 машин из 10.</p>
 <p><strong>Ждали за 3 часа</strong>: не прогноз, а факт. Сколько прошло от регистрации до вызова у машин, которых вызвали за последние три часа. Когда очередь быстро растёт или тает, эта цифра отстаёт от прогноза.</p>
 <p>Насколько прогнозу можно верить, показано на странице <a href="accuracy.html">точности</a>: на коротких очередях он почти всегда попадает в пределах часа, на длинных ошибается на часы.</p>
 <p class="muted small">Здесь только выезд из Беларуси: очередь в зоны ожидания перед белорусскими пунктами пропуска. Очередь на въезд в Беларусь и со стороны Польши, Литвы и Латвии не показывается.</p>""",
