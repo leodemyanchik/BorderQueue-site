@@ -70,12 +70,14 @@ def wait_text(cp):
 
 def summary(cp):
     """Та же фраза, что summary() в assets/app.js."""
+    if cp.get("fresh") is False: return "свежих данных об очереди сейчас нет"
     if cp["cars"] == 0: return "очереди нет, вызывают почти сразу"
     wait = "" if cp.get("waitMinutes") is None else f", ждать вызова {wait_text(cp)}"
     return f"в очереди {cars_word(cp['cars'])}{wait}"
 
 
 def short_snap(cp):
+    if cp.get("fresh") is False: return "нет свежих данных"
     if cp["cars"] == 0: return "без очереди"
     if cp.get("waitMinutes") is None: return cars_word(cp["cars"])
     return f"{cars_word(cp['cars'])}, {wait_text(cp)}"

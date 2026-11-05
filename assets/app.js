@@ -83,11 +83,17 @@ function clock(unix) {
 
 function ago(unix) {
   const m = Math.max(0, Math.round((Date.now() / 1000 - unix) / 60));
-  return m < 1 ? "только что" : `${m} мин назад`;
+  return m < 1 ? "только что" : m < 120 ? `${m} мин назад` : `${Math.floor(m / 60)} ч назад`;
 }
+
+// Снимок старше 20 минут: бот перестал получать очередь от источника, и цифры в нём прошлые.
+// Тогда вместо них «нет данных», а не «без очереди»: 04.11 источник начал отдавать пустые
+// списки, и сайт сутки показывал, что очереди нет. Поле fresh приходит от бота.
+const stale = (cp) => cp.fresh === false;
 
 // Статус словами, а не только цветом: цвет на солнце и для части людей не различим.
 function pill(cp) {
+  if (stale(cp)) return `<span class="pill none">нет данных</span>`;
   if (cp.cars === 0) return `<span class="pill ok">без очереди</span>`;
   const l = level(cp.waitMinutes);
   const text = { ok: "до часа", warn: "1–4 часа", bad: "больше 4 часов", none: "без прогноза" }[l];
@@ -100,6 +106,7 @@ const range = (cp) => (cp.waitLowMinutes == null ? null
   : [Math.round(cp.waitLowMinutes / 60), Math.round(cp.waitHighMinutes / 60)]);
 const wait = (cp) => { const r = range(cp); return r ? `от ${r[0]} до ${r[1]} ч` : `около ${dur(cp.waitMinutes)}`; };
 const forecast = (cp) => {
+  if (stale(cp)) return "нет данных";
   if (cp.cars === 0) return "почти сразу";
   const r = range(cp);
   return r ? `${r[0]}–${r[1]} ч` : dur(cp.waitMinutes);
@@ -138,11 +145,11 @@ function card(cp) {
       <div class="big num">${forecast(cp)}</div>
       <div class="big-label">ждать вызова, если встать сейчас</div>
       <div class="facts">
-        <span>в очереди <b class="num">${cp.cars.toLocaleString("ru-RU")}</b></span>
+        <span>в очереди <b class="num">${stale(cp) ? "нет данных" : cp.cars.toLocaleString("ru-RU")}</b></span>
         <span>ждали за 3 часа <b class="num">${measured(cp)}</b></span>
-        ${trucks}
+        ${stale(cp) ? "" : trucks}
       </div>
-      ${spark(cp.series)}
+      ${stale(cp) ? "" : spark(cp.series)}
     </a>`;
 }
 
@@ -155,7 +162,9 @@ function staleCheck(now) {
   const m = Math.round((Date.now() / 1000 - newest(now)) / 60);
   box.hidden = m <= STALE_MINUTES;
   if (m > STALE_MINUTES) {
-    box.textContent = `Данные не обновлялись ${m} мин. Источник мог временно не отвечать, цифры ниже могут быть устаревшими.`;
+    box.textContent = m > 60
+      ? `Свежих данных об очереди нет больше ${Math.floor(m / 60)} ч: источник перестал их отдавать. Когда данные вернутся, цифры появятся здесь сами.`
+      : `Данные не обновлялись ${m} мин. Источник мог временно не отвечать, цифры ниже могут быть устаревшими.`;
   }
 }
 
@@ -167,6 +176,7 @@ let lastSnapshot = null;
 // tools/build.py, когда подставляет цифры в HTML для поисковиков: живой скрипт потом лишь
 // обновляет ту же фразу, а не рисует другую.
 function summary(cp) {
+  if (stale(cp)) return "свежих данных об очереди сейчас нет";
   if (cp.cars === 0) return "очереди нет, вызывают почти сразу";
   const tail = cp.waitMinutes == null ? "" : `, ждать вызова ${wait(cp)}`;
   return `в очереди ${cars(cp.cars)}${tail}`;
@@ -188,7 +198,7 @@ function snaps(now) {
   document.querySelectorAll("[data-snap]").forEach((el) => {
     const cp = now.checkpoints.find((c) => c.code === el.dataset.snap);
     if (!cp) return;
-    el.textContent = cp.cars === 0 ? "без очереди"
+    el.textContent = stale(cp) ? "нет свежих данных" : cp.cars === 0 ? "без очереди"
       : cp.waitMinutes == null ? cars(cp.cars) : `${cars(cp.cars)}, ${wait(cp)}`;
   });
 }
@@ -275,9 +285,9 @@ function renderCheckpoint(code, now) {
   const cp = now?.checkpoints.find((c) => c.code === code);
   const box = $("#cp");
   if (!cp) return false;
-  const trucks = cp.trucks > 0 ? `<p class="note">Грузовых в очереди: <b class="num">${cp.trucks}</b></p>` : "";
+  const trucks = !stale(cp) && cp.trucks > 0 ? `<p class="note">Грузовых в очереди: <b class="num">${cp.trucks}</b></p>` : "";
   // Автобусы только в Бресте: на остальных пунктах их в зоне ожидания почти не бывает.
-  const buses = code === "Brest" && cp.buses != null
+  const buses = !stale(cp) && code === "Brest" && cp.buses != null
     ? `<p class="note">Автобусов в зоне ожидания: <b class="num">${cp.buses}</b>. Дольше всего автобусы обычно стоят на самом переходе, а этого электронная очередь не видит.</p>`
     : "";
   box.innerHTML = `
@@ -285,10 +295,12 @@ function renderCheckpoint(code, now) {
       <div class="card-head"><h3>Сейчас</h3>${pill(cp)}</div>
       <div class="detail" style="margin-top:16px">
         <div><div class="big num">${forecast(cp)}</div><div class="big-label">ждать вызова, если встать сейчас</div></div>
-        <div><div class="big num">${cp.cars.toLocaleString("ru-RU")}</div><div class="big-label">${plural(cp.cars, "машина", "машины", "машин")} в очереди</div></div>
+        ${stale(cp)
+          ? `<div><div class="big num">нет данных</div><div class="big-label">машин в очереди</div></div>`
+          : `<div><div class="big num">${cp.cars.toLocaleString("ru-RU")}</div><div class="big-label">${plural(cp.cars, "машина", "машины", "машин")} в очереди</div></div>`}
         <div><div class="big num">${measured(cp)}</div><div class="big-label">ждали вызванные за последние 3 часа</div></div>
       </div>
-      ${spark(cp.series, true)}
+      ${stale(cp) ? "" : spark(cp.series, true)}
       ${trucks}
       ${buses}
     </div>`;
